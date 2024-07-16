@@ -38,28 +38,18 @@ func SubSpotTicker(symbols []string, reciveHandle func(Ticker), logHandle func(s
 	})
 	ws.OnConnected(func() {
 		go logHandle("SubSpotTicker Connected")
-		var symbols_groups = [][]string{}
-		n := 0 // 当前组序号
-		groupLimit := 50
-		for _, v := range symbols {
-			if len(symbols_groups) <= n {
-				symbols_groups = append(symbols_groups, []string{})
-			}
-			symbols_groups[n] = append(symbols_groups[n], fmt.Sprintf("%susdt@bookTicker", strings.ToLower(v)))
-			if len(symbols_groups[n]) >= groupLimit {
-				n++
-			}
+		subList := []string{}
+		for _, s := range symbols {
+			subList = append(subList, fmt.Sprintf("%susdt@bookTicker", strings.ToLower(s)))
 		}
-		for _, v := range symbols_groups {
-			subData := map[string]any{
-				"method": "SUBSCRIBE",
-				"params": v,
-				"id":     util.GetUUID32(),
-			}
-			buff, _ := json.Marshal(subData)
-			ws.SendTextMessage(string(buff))
-			go logHandle(fmt.Sprintf("订阅币对: %v\n", strings.Join(symbols, "、")))
+		subData := map[string]any{
+			"method": "SUBSCRIBE",
+			"params": subList,
+			"id":     util.GetUUID32(),
 		}
+		buff, _ := json.Marshal(subData)
+		ws.SendTextMessage(string(buff))
+		go logHandle(fmt.Sprintf("订阅币对: %v", strings.Join(symbols, "、")))
 	})
 	ws.OnTextMessageReceived(func(msg string) {
 		m := WssSpotMsg{}
