@@ -217,17 +217,18 @@ func GetSwapAccount() (data SwapAccount, err error) {
 }
 
 type SwapFunding struct {
-	Symbol                   string `json:"symbol"`
-	AdjustedFundingRateCap   string `json:"adjustedFundingRateCap"`
-	AdjustedFundingRateFloor string `json:"adjustedFundingRateFloor"`
-	FundingIntervalHours     int    `json:"fundingIntervalHours"`
+	Symbol      string `json:"symbol"`          // 交易对 "BTCUSDT"
+	FundingRate string `json:"lastFundingRate"` // 最近更新的资金费率
+	// "nextFundingTime": 1597392000000,   // 下次资金费时间
+	// "interestRate": "0.00010000",       // 标的资产基础利率
+	Time int64 `json:"time"` // 更新时间 1597370495002
 }
 
 // 期货资金费率
 // doc: https://developers.binance.com/docs/zh-CN/derivatives/usds-margined-futures/market-data/rest-api/Get-Funding-Info
 func GetSwapFunding() (data []SwapFunding, err error) {
-	const flag = "binance GetSwapBalance"
-	body, _, err := root.ApiConfig.Request("GET", gateway_fapi, "/fapi/v1/fundingInfo", nil, 0, false)
+	const flag = "binance GetSwapFunding"
+	body, _, err := root.ApiConfig.Request("GET", gateway_fapi, "/fapi/v1/premiumIndex", nil, 0, false)
 	if err != nil {
 		err = fmt.Errorf("%s err: %v", flag, err)
 		return
