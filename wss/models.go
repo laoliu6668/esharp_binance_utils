@@ -1,4 +1,4 @@
-package binance_wss
+package wss
 
 import "encoding/json"
 
@@ -20,11 +20,10 @@ type ReciveData struct {
 }
 
 type ReciveBalanceMsg struct {
-	Exchange  string  `json:"exchange"`
-	Symbol    string  `json:"symbol"`
-	Available float64 `json:"available"`
-	AccountId int64   `json:"accountId"`
-	Balance   float64 `json:"balance"`
+	Exchange string  `json:"exchange"`
+	Symbol   string  `json:"symbol"`
+	Free     float64 `json:"free"`
+	Lock     float64 `json:"lock"`
 }
 
 type ReciveAccountsMsg struct {

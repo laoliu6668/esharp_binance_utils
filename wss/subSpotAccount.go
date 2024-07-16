@@ -1,4 +1,4 @@
-package binance_wss
+package wss
 
 import (
 	"encoding/json"
@@ -6,136 +6,133 @@ import (
 	"strings"
 	"time"
 
-	htx "github.com/laoliu6668/esharp_binance_utils"
+	root "github.com/laoliu6668/esharp_binance_utils"
 	"github.com/laoliu6668/esharp_binance_utils/apis"
 	"github.com/laoliu6668/esharp_binance_utils/util"
 	"github.com/laoliu6668/esharp_binance_utils/util/websocketclient"
+	"github.com/shopspring/decimal"
 )
 
-// 订阅现货账户变化
-func SubSpotAccount(reciveHandle func(ReciveBalanceMsg), logHandle func(string), errHandle func(error)) {
+const proto = "wss://"
 
-	// 进入先获取listenKey
-	var listenKey string
-	for {
-		s, err := apis.GetSpotAccountListenKey()
-		if err != nil {
-			errHandle(fmt.Errorf("GetSpotAccountListenKey: %v", err.Error()))
-			time.Sleep(time.Second * 10)
-			continue
-		}
-		listenKey = s
-		break
+type balanceRes struct {
+	Symbol string `json:"a"` // 资产名称
+	Free   string `json:"f"` // 可用余额
+	Lokc   string `json:"l"` // 冻结余额
+}
+
+// 订阅现货账户变化
+func SubSpotAccount(reciveAccHandle func(ReciveBalanceMsg), reciveOrderHandle func(ReciveSpotOrderMsg), logHandle func(string), errHandle func(error)) {
+	const flag = "Binance SubAccountUpdate"
+	s, err := apis.GetSpotAccountListenKey()
+	if err != nil {
+		fmt.Printf("err: %v\n", err)
 	}
+	fmt.Printf("s: %v\n", s)
 	gateway := "stream.binance.com:9443/stream?streams="
 
+	// 保持listenKey
+
 	ticker := time.NewTicker(time.Minute * 30)
+
+	defer ticker.Stop()
 	go func() {
 		for range ticker.C {
-			apis.KeepSpotAccountListenKey(listenKey)
+			apis.KeepSpotAccountListenKey(s)
 		}
 	}()
-	requrl := fmt.Sprintf("wss://%s%s", gateway, listenKey)
+
+	requrl := fmt.Sprintf("%s%s%s", proto, gateway, s)
 	proxyUrl := ""
-	if htx.UseProxy {
-		go logHandle(fmt.Sprintf("proxyUrl: %v\n", htx.ProxyUrl))
-		proxyUrl = fmt.Sprintf("http://%s", htx.ProxyUrl)
+	if root.UseProxy {
+		go logHandle(fmt.Sprintf("proxyUrl: %v\n", root.ProxyUrl))
+		proxyUrl = fmt.Sprintf("http://%s", root.ProxyUrl)
 
 	}
-	go logHandle(fmt.Sprintf("requrl: %v\n", requrl))
 	ws := websocketclient.New(requrl, proxyUrl)
 	ws.OnConnectError(func(err error) {
-		// fmt.Printf("err: %v\n", err)
 		go errHandle(err)
 	})
 	ws.OnDisconnected(func(err error) {
 		go errHandle(err)
 	})
 	ws.OnConnected(func() {
-		go logHandle("## connected SubAccountUpdate\n")
-		// fmt.Printf("authInfo: %v\n", string(authBuf))
+		go logHandle(fmt.Sprintf("%s connected", flag))
 	})
 	ws.OnTextMessageReceived(func(message string) {
 		fmt.Printf("message: %v\n", message)
-	})
-	ws.OnBinaryMessageReceived(func(message []byte) {
-		fmt.Printf("message: %v\n", string(message))
-		type Msg struct {
-			Action string         `json:"action"`
-			Ch     string         `json:"ch"`
-			Code   int            `json:"code"`
-			Data   map[string]any `json:"data"`
+
+		type data struct {
+			Event       string     `json:"e"` // 事件类型
+			EventTime   int64      `json:"E"` // 事件时间
+			Symbol      string     `json:"s"` // 账户本次更新时间戳
+			B           balanceRes `json:"B"` // 余额 outboundAccountPosition
+			OrderFaq    string     `json:"S"` // 订单方向 BUY SELL
+			OrderId     string     `json:"i"` // orderId
+			OrderStatus string     `json:"X"` // orderStatus
+			OrderVolume string     `json:"q"` // 订单原始数量
+			OrderPrice  string     `json:"p"` // 订单原始价格
+			TradeVolume string     `json:"z"` // 订单累计已成交量
+			TradeValue  string     `json:"Z"` // 订单累计已成交金额
+			CreatedAt   int64      `json:"O"` // 订单创建时间
+			FilledAt    int64      `json:"T"` // 订单成交时间
+
 		}
-		msg := Msg{}
-		err := json.Unmarshal([]byte(message), &msg)
+		type msg struct {
+			Stream string `json:"stream"`
+			Data   data   `json:"data"`
+		}
+		m := msg{}
+		err := json.Unmarshal([]byte(message), &m)
 		if err != nil {
-			go errHandle(fmt.Errorf("decode: %v", err))
+			go errHandle(fmt.Errorf("%s json.Unmarshal %s", flag, err.Error()))
 			return
 		}
-		if msg.Action == "ping" {
-			type pingTs struct {
-				Ts int64 `json:"ts"`
+		symbol := strings.Replace(m.Data.Symbol, "USDT", "", 1)
+		if m.Data.Event == "outboundAccountPosition" {
+			// 账户更新
+			reciveAccHandle(ReciveBalanceMsg{
+				Exchange: root.ExchangeName,
+				Symbol:   symbol,
+				Free:     util.ParseFloat(m.Data.B.Free, 0),
+				Lock:     util.ParseFloat(m.Data.B.Lokc, 0),
+			})
+		} else if m.Data.Event == "executionReport" {
+			if m.Data.OrderStatus != "FILLED" {
+				// 只要成交订单
+				return
 			}
-			type pingRes struct {
-				Action string `json:"action"`
-				Data   pingTs `json:"data"`
-			}
-			pingRet := &pingRes{}
-			json.Unmarshal([]byte(message), pingRet)
-			pong := fmt.Sprintf(`{"action":"pong","data":{"ts":%d}}`, pingRet.Data.Ts)
-			// 收到ping 回复pong
-			ws.SendTextMessage(pong)
-		} else if msg.Action == "push" && strings.Contains(msg.Ch, "accounts.update") {
-
-			type Data struct {
-				Currency    string      `json:"currency"`
-				AccountId   int64       `json:"accountId"`
-				Balance     json.Number `json:"balance"`
-				Available   json.Number `json:"available"`
-				AccountType string      `json:"accountType"`
-				// SeqNum      int64       `json:"seqNum"`
-			}
-			type TickerRes struct {
-				Data Data `json:"data"`
-			}
-			res := TickerRes{}
-			json.Unmarshal([]byte(message), &res)
-			if res.Data.AccountType == "trade" {
-				a, _ := res.Data.Available.Float64()
-				b, _ := res.Data.Balance.Float64()
-				go reciveHandle(ReciveBalanceMsg{
-					Exchange:  htx.ExchangeName,
-					Symbol:    strings.ToUpper(res.Data.Currency),
-					AccountId: res.Data.AccountId,
-					Available: a,
-					Balance:   b,
-				})
-			}
-		} else if msg.Action == "req" {
-			if msg.Ch == "auth" && msg.Code == 200 {
-				// 订阅账户信息
-				subAccountUpdateMp := map[string]any{
-					"action": "sub",
-					"cid":    util.GetUUID32(),
-					"ch":     "accounts.update#0",
-				}
-				bf, _ := json.Marshal(subAccountUpdateMp)
-				// fmt.Printf("sub: %v\n", string(bf))
-				go logHandle(fmt.Sprintf("sub: %v\n", string(bf)))
-				ws.SendTextMessage(string(bf))
-			}
-		} else if msg.Action == "sub" {
-			go logHandle("## SubAccountUpdate sub success\n")
-			// if msg.Code != 200 {
-			// }
-		} else {
-			// fmt.Printf("unknown message: %v\n", string(message))
-			go logHandle(fmt.Sprintf("unknown message: %v\n", string(message)))
+			o := m.Data
+			orderPriceD, _ := decimal.NewFromString(o.OrderPrice)
+			orderVolumeD, _ := decimal.NewFromString(o.OrderVolume)
+			orderValueD := orderPriceD.Mul(orderVolumeD)
+			orderValue, _ := orderValueD.Float64()
+			tradeValueD, _ := decimal.NewFromString(o.TradeValue)
+			tradeVolumeD, _ := decimal.NewFromString(o.TradeVolume)
+			tradePriceD := tradeValueD.Div(tradeVolumeD)
+			tradePrice, _ := tradePriceD.Float64()
+			// 订单更新
+			reciveOrderHandle(ReciveSpotOrderMsg{
+				Exchange:    root.ExchangeName,
+				Symbol:      symbol,
+				OrderId:     o.OrderId,
+				OrderType:   strings.ToLower(o.OrderFaq) + "-market",
+				OrderPrice:  util.ParseFloat(o.OrderPrice, 0),
+				OrderVolume: util.ParseFloat(o.OrderVolume, 0),
+				OrderValue:  orderValue,
+				TradePrice:  tradePrice,
+				TradeVolume: util.ParseFloat(o.TradeVolume, 0),
+				TradeValue:  util.ParseFloat(o.TradeValue, 0),
+				CreateAt:    o.CreatedAt,
+				FilledAt:    o.FilledAt,
+				Status:      2,
+			})
+		} else if m.Data.Event == "balanceUpdate" {
+			logHandle(message)
 		}
 	})
 
 	ws.OnClose(func(code int, text string) {
-		// fmt.Printf("close: %v, %v\n", code, text)
 		go errHandle(fmt.Errorf("close: %v, %v", code, text))
 	})
 

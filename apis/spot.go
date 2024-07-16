@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	binance "github.com/laoliu6668/esharp_binance_utils"
-	"github.com/laoliu6668/esharp_binance_utils/util"
 )
 
 // # MODEL 获取用户账户
@@ -29,7 +28,7 @@ func GetSpotAccount() (data []AccountData, err error) {
 		fmt.Println(err)
 		return
 	}
-	util.WriteTestJsonFile(flag, body)
+	// util.WriteTestJsonFile(flag, body)
 	res := ApiResponseAccountData{}
 	err = json.Unmarshal(body, &res)
 	if err != nil {

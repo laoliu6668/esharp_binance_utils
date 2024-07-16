@@ -1,4 +1,4 @@
-package binance_wss
+package wss
 
 import (
 	"encoding/json"
@@ -108,17 +108,7 @@ func SubSwapAccount(reciveHandle func(ReciveBalanceMsg), logHandle func(string),
 			}
 			res := TickerRes{}
 			json.Unmarshal([]byte(message), &res)
-			if res.Data.AccountType == "trade" {
-				a, _ := res.Data.Available.Float64()
-				b, _ := res.Data.Balance.Float64()
-				go reciveHandle(ReciveBalanceMsg{
-					Exchange:  htx.ExchangeName,
-					Symbol:    strings.ToUpper(res.Data.Currency),
-					AccountId: res.Data.AccountId,
-					Available: a,
-					Balance:   b,
-				})
-			}
+
 		} else if msg.Action == "req" {
 			if msg.Ch == "auth" && msg.Code == 200 {
 				// 订阅账户信息

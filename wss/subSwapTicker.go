@@ -1,4 +1,4 @@
-package binance_wss
+package wss
 
 import (
 	"encoding/json"
