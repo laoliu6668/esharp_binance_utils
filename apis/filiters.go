@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	root "github.com/laoliu6668/esharp_binance_utils"
-	"github.com/laoliu6668/esharp_binance_utils/util"
 )
 
 const gateway_vision = "data-api.binance.vision"
@@ -64,7 +63,7 @@ func GetSwapSymbols() (data []FilterSymbol, err error) {
 		fmt.Println(err)
 		return
 	}
-	util.WriteTestJsonFile(flag, body)
+	// util.WriteTestJsonFile(flag, body)
 	res := ApiResponseFiliter{}
 	d := json.NewDecoder(strings.NewReader(string(body)))
 	d.UseNumber()
