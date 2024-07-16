@@ -3,7 +3,6 @@ package apis
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	root "github.com/laoliu6668/esharp_binance_utils"
 )
@@ -28,9 +27,8 @@ type OrderRes struct {
 func SpotBuyMarket(symb string, amount float64) (orderId string, err error) {
 	// 市价买入
 	const flag = "Binance SpotBuyMarket"
-	fmt.Printf("(strings.ToUpper(symb) + \"USDT\"): %v\n", (strings.ToUpper(symb) + "USDT"))
 	body, _, err := root.ApiConfig.Post(gateway_binance, "/api/v3/order", map[string]any{
-		"symbol":           "DOTUSDT",
+		"symbol":           symb + "USDT",
 		"side":             "BUY",
 		"type":             "MARKET",
 		"quantity":         amount,
@@ -57,8 +55,8 @@ func SpotSellMarket(symb string, volume float64) (data string, err error) {
 	// 市价卖出
 	const flag = "Binance SpotSellMarket"
 	body, _, err := root.ApiConfig.Post(gateway_binance, "/api/v3/order", map[string]any{
-		"symbol":           "DOT/USDT",
-		"side":             "BUY",
+		"symbol":           symb + "USDT",
+		"side":             "SELL",
 		"type":             "MARKET",
 		"quantity":         volume,
 		"newOrderRespType": "ACK",
