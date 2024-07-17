@@ -20,24 +20,61 @@ type balanceRes struct {
 	Free   string `json:"f"` // 可用余额
 	Lokc   string `json:"l"` // 冻结余额
 }
+type order struct {
+	Symbol      string `json:"s"`
+	OrderFaq    string `json:"S"` // 订单方向 BUY SELL
+	OrderId     int64  `json:"i"` // orderId
+	OrderStatus string `json:"X"` // orderStatus
+	OrderVolume string `json:"q"` // 订单原始数量
+	OrderPrice  string `json:"p"` // 订单原始价格
+	TradeVolume string `json:"z"` // 订单累计已成交量
+	TradeValue  string `json:"Z"` // 订单累计已成交金额
+	OrderType   string `json:"o"` // 订单类型
+	CreatedAt   int64  `json:"O"` // 订单创建时间
+	FilledAt    int64  `json:"T"` // 订单成交时间
+}
+type data struct {
+	Event     string `json:"e"` // 事件类型
+	EventTime int64  `json:"E"` // 事件时间
+}
+type account struct {
+	Event     string       `json:"e"` // 事件类型
+	EventTime int64        `json:"E"` // 事件时间
+	Symbol    string       `json:"s"` // 账户本次更新时间戳
+	B         []balanceRes `json:"B"` // 余额 outboundAccountPosition
+}
+type msgOrder struct {
+	Stream string `json:"stream"`
+	Data   order  `json:"data"`
+}
+type msgAccount struct {
+	Stream string  `json:"stream"`
+	Data   account `json:"data"`
+}
+type msg struct {
+	Stream string `json:"stream"`
+	Data   data   `json:"data"`
+}
 
 // 订阅现货账户变化
+// 同步:ReciveBalanceMsg 异步:reciveOrderHandle、logHandle、errHandle
 func SubSpotAccount(reciveAccHandle func(ReciveBalanceMsg), reciveOrderHandle func(ReciveSpotOrderMsg), logHandle func(string), errHandle func(error)) {
 	const flag = "Binance SubAccountUpdate"
 	s, err := apis.GetSpotAccountListenKey()
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 	}
-	fmt.Printf("s: %v\n", s)
+	fmt.Printf("listenKey: %v\n", s)
 	gateway := "stream.binance.com:9443/stream?streams="
 
 	// 保持listenKey
 
 	ticker := time.NewTicker(time.Minute * 30)
 
-	defer ticker.Stop()
+	// defer ticker.Stop()
 	go func() {
 		for range ticker.C {
+			fmt.Printf("keep listenKey: %v\n", s)
 			apis.KeepSpotAccountListenKey(s)
 		}
 	}()
@@ -60,47 +97,49 @@ func SubSpotAccount(reciveAccHandle func(ReciveBalanceMsg), reciveOrderHandle fu
 		go logHandle(fmt.Sprintf("%s connected", flag))
 	})
 	ws.OnTextMessageReceived(func(message string) {
-		fmt.Printf("message: %v\n", message)
-
-		type data struct {
-			Event       string     `json:"e"` // 事件类型
-			EventTime   int64      `json:"E"` // 事件时间
-			Symbol      string     `json:"s"` // 账户本次更新时间戳
-			B           balanceRes `json:"B"` // 余额 outboundAccountPosition
-			OrderFaq    string     `json:"S"` // 订单方向 BUY SELL
-			OrderId     string     `json:"i"` // orderId
-			OrderStatus string     `json:"X"` // orderStatus
-			OrderVolume string     `json:"q"` // 订单原始数量
-			OrderPrice  string     `json:"p"` // 订单原始价格
-			TradeVolume string     `json:"z"` // 订单累计已成交量
-			TradeValue  string     `json:"Z"` // 订单累计已成交金额
-			CreatedAt   int64      `json:"O"` // 订单创建时间
-			FilledAt    int64      `json:"T"` // 订单成交时间
-
-		}
-		type msg struct {
-			Stream string `json:"stream"`
-			Data   data   `json:"data"`
-		}
 		m := msg{}
 		err := json.Unmarshal([]byte(message), &m)
 		if err != nil {
-			go errHandle(fmt.Errorf("%s json.Unmarshal %s", flag, err.Error()))
+			go errHandle(fmt.Errorf("%s json.Unmarshal %s %s", flag, err.Error(), message))
 			return
 		}
-		symbol := strings.Replace(m.Data.Symbol, "USDT", "", 1)
 		if m.Data.Event == "outboundAccountPosition" {
-			// 账户更新
-			reciveAccHandle(ReciveBalanceMsg{
-				Exchange: root.ExchangeName,
-				Symbol:   symbol,
-				Free:     util.ParseFloat(m.Data.B.Free, 0),
-				Lock:     util.ParseFloat(m.Data.B.Lokc, 0),
-			})
+			m := msgAccount{}
+			err := json.Unmarshal([]byte(message), &m)
+			if err != nil {
+				go errHandle(fmt.Errorf("%s json.Unmarshal %s %s", flag, err.Error(), message))
+				return
+			}
+			for _, v := range m.Data.B {
+				m := msgAccount{}
+				err := json.Unmarshal([]byte(message), &m)
+				if err != nil {
+					go errHandle(fmt.Errorf("%s json.Unmarshal %s %s", flag, err.Error(), message))
+					return
+				}
+				// 账户更新
+				reciveAccHandle(ReciveBalanceMsg{
+					Exchange: root.ExchangeName,
+					Symbol:   v.Symbol,
+					Free:     util.ParseFloat(v.Free, 0),
+					Lock:     util.ParseFloat(v.Lokc, 0),
+				})
+			}
+
 		} else if m.Data.Event == "executionReport" {
+			m := msgOrder{}
+			err := json.Unmarshal([]byte(message), &m)
+			if err != nil {
+				go errHandle(fmt.Errorf("%s json.Unmarshal %s %s", flag, err.Error(), message))
+				return
+			}
 			if m.Data.OrderStatus != "FILLED" {
 				// 只要成交订单
 				return
+			}
+			symbol := strings.Replace(m.Data.Symbol, "USDT", "", 1)
+			if m.Data.Symbol == "USDT" {
+				symbol = "USDT"
 			}
 			o := m.Data
 			orderPriceD, _ := decimal.NewFromString(o.OrderPrice)
@@ -112,11 +151,11 @@ func SubSpotAccount(reciveAccHandle func(ReciveBalanceMsg), reciveOrderHandle fu
 			tradePriceD := tradeValueD.Div(tradeVolumeD)
 			tradePrice, _ := tradePriceD.Float64()
 			// 订单更新
-			reciveOrderHandle(ReciveSpotOrderMsg{
+			go reciveOrderHandle(ReciveSpotOrderMsg{
 				Exchange:    root.ExchangeName,
 				Symbol:      symbol,
-				OrderId:     o.OrderId,
-				OrderType:   strings.ToLower(o.OrderFaq) + "-market",
+				OrderId:     string(o.OrderId),
+				OrderType:   strings.ToLower(o.OrderFaq + "-" + o.OrderType),
 				OrderPrice:  util.ParseFloat(o.OrderPrice, 0),
 				OrderVolume: util.ParseFloat(o.OrderVolume, 0),
 				OrderValue:  orderValue,

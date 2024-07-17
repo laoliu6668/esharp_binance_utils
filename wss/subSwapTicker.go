@@ -11,6 +11,7 @@ import (
 )
 
 type WssSwapMsg struct {
+	Id string `json:"id"`
 	E  string `json:"e"` // 事件名
 	U  int64  `json:"u"` // 更新ID
 	S  string `json:"s"` // 交易对
@@ -22,8 +23,8 @@ type WssSwapMsg struct {
 	ET int64  `json:"E"` // 事件时间 0.0000000848
 }
 
-func SubSwapTicker(reciveHandle func(Ticker), logHandle func(string), errHandle func(error)) {
-	gateway := "wss://fstream.binance.com/ws/!bookTicker"
+func SubSwapTicker(symbols []string, reciveHandle func(Ticker), logHandle func(string), errHandle func(error)) {
+	gateway := "wss://fstream.binance.com/ws"
 	proxyUrl := ""
 	if root.UseProxy {
 		proxyUrl = fmt.Sprintf("http://%s", root.ProxyUrl)
@@ -37,6 +38,18 @@ func SubSwapTicker(reciveHandle func(Ticker), logHandle func(string), errHandle 
 	})
 	ws.OnConnected(func() {
 		go logHandle("SubSwapTicker Connected")
+		subList := []string{}
+		for _, s := range symbols {
+			subList = append(subList, fmt.Sprintf("%susdt@bookTicker", strings.ToLower(s)))
+		}
+		subData := map[string]any{
+			"method": "SUBSCRIBE",
+			"params": subList,
+			"id":     util.GetUUID32(),
+		}
+		buff, _ := json.Marshal(subData)
+		ws.SendTextMessage(string(buff))
+		go logHandle(fmt.Sprintf("订阅币对: %v", strings.Join(symbols, "、")))
 	})
 	ws.OnTextMessageReceived(func(msg string) {
 		m := WssSwapMsg{}
@@ -59,6 +72,8 @@ func SubSwapTicker(reciveHandle func(Ticker), logHandle func(string), errHandle 
 				},
 				UpdateAt: root.GetTimeFloat(),
 			})
+		} else if m.Id != "" {
+			go logHandle("订阅成功: " + m.Id)
 		} else {
 			go logHandle("unkown msg: " + msg)
 		}
