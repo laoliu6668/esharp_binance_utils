@@ -12,7 +12,7 @@ const gateway_fapi = "fapi.binance.com"
 
 // 期货卖出开空
 // doc: https://developers.binance.com/docs/zh-CN/derivatives/usds-margined-futures/trade/rest-api/New-Order
-func SwapSellOpen(symb string, volume int) (orderId string, err error) {
+func SwapSellOpen(symb string, volume float64) (orderId string, err error) {
 	const symbol = "HTX SwapSellOpen"
 	body, _, err := root.ApiConfig.Post(gateway_fapi, "/fapi/v1/order", map[string]any{
 		"symbol":       fmt.Sprintf("%sUSDT", strings.ToUpper(symb)),
@@ -41,7 +41,7 @@ func SwapSellOpen(symb string, volume int) (orderId string, err error) {
 
 // 期货买入平空
 // doc: https://developers.binance.com/docs/zh-CN/derivatives/usds-margined-futures/trade/rest-api/New-Order
-func SwapBuyClose(symb string, volume int) (orderId string, err error) {
+func SwapBuyClose(symb string, volume float64) (orderId string, err error) {
 	const symbol = "Binance SwapBuyClose"
 	body, _, err := root.ApiConfig.Post(gateway_fapi, "/fapi/v1/order", map[string]any{
 		"symbol":       fmt.Sprintf("%sUSDT", strings.ToUpper(symb)),
@@ -69,7 +69,7 @@ func SwapBuyClose(symb string, volume int) (orderId string, err error) {
 
 // 期货买入开多
 // doc: https://developers.binance.com/docs/zh-CN/derivatives/usds-margined-futures/trade/rest-api/New-Order
-func SwapBuyOpen(symb string, volume int) (orderId string, err error) {
+func SwapBuyOpen(symb string, volume float64) (orderId string, err error) {
 	const symbol = "Binance SwapBuyOpen"
 	body, _, err := root.ApiConfig.Post(gateway_fapi, "/fapi/v1/order", map[string]any{
 		"symbol":       fmt.Sprintf("%sUSDT", strings.ToUpper(symb)),
@@ -97,7 +97,7 @@ func SwapBuyOpen(symb string, volume int) (orderId string, err error) {
 
 // 期货买入开多
 // doc: https://developers.binance.com/docs/zh-CN/derivatives/usds-margined-futures/trade/rest-api/New-Order
-func SwapSellClose(symb string, volume int) (orderId string, err error) {
+func SwapSellClose(symb string, volume float64) (orderId string, err error) {
 	const symbol = "Binance SwapSellClose"
 	body, _, err := root.ApiConfig.Post(gateway_fapi, "/fapi/v1/order", map[string]any{
 		"symbol":       fmt.Sprintf("%sUSDT", strings.ToUpper(symb)),
