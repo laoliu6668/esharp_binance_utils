@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	root "github.com/laoliu6668/esharp_binance_utils"
+	"github.com/laoliu6668/esharp_binance_utils/util"
 )
 
 const gateway_vision = "data-api.binance.vision"
@@ -13,6 +14,7 @@ const gateway_vision = "data-api.binance.vision"
 type FilterSymbol struct {
 	BaseAssetPrecision int              `json:"baseAssetPrecision"` // 交易数量精度
 	QuotePrecision     int              `json:"quotePrecision"`     // 交易金额精度
+	QuantityPrecision  int              `json:"quantityPrecision"`  // 交易数量精度
 	Status             string           `json:"status"`             // TRADING
 	QuoteAsset         string           `json:"quoteAsset"`         // USDT
 	BaseAsset          string           `json:"baseAsset"`          // BTC
@@ -63,7 +65,7 @@ func GetSwapSymbols() (data []FilterSymbol, err error) {
 		fmt.Println(err)
 		return
 	}
-	// util.WriteTestJsonFile(flag, body)
+	util.WriteTestJsonFile(flag, body)
 	res := ApiResponseFiliter{}
 	d := json.NewDecoder(strings.NewReader(string(body)))
 	d.UseNumber()

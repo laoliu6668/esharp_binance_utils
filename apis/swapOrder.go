@@ -13,7 +13,7 @@ const gateway_fapi = "fapi.binance.com"
 // 期货卖出开空
 // doc: https://developers.binance.com/docs/zh-CN/derivatives/usds-margined-futures/trade/rest-api/New-Order
 func SwapSellOpen(symb string, volume float64) (orderId string, err error) {
-	const symbol = "HTX SwapSellOpen"
+	const symbol = root.ExchangeName + "SwapSellOpen"
 	body, _, err := root.ApiConfig.Post(gateway_fapi, "/fapi/v1/order", map[string]any{
 		"symbol":       fmt.Sprintf("%sUSDT", strings.ToUpper(symb)),
 		"volume":       volume,
