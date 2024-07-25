@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	root "github.com/laoliu6668/esharp_binance_utils"
+	"github.com/laoliu6668/esharp_binance_utils/util"
 )
 
 type Res struct {
@@ -234,6 +235,26 @@ func GetSwapFunding() (data []SwapFunding, err error) {
 		return
 	}
 	// fmt.Printf("body: %s\n", body)
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		err = fmt.Errorf("%s jsonDecodeErr: %v", flag, err)
+		fmt.Println(err)
+		return
+	}
+	return
+}
+
+// 账户信息 持仓风险
+// doc: https://binance-docs.github.io/apidocs/futures/cn/#v2-user_data-2
+func GetPositionRisk() (data SwapAccount, err error) {
+	const flag = "binance GetPositionRisk"
+	body, _, err := root.ApiConfig.Get(gateway_fapi, "/fapi/v2/positionRisk", nil)
+	if err != nil {
+		err = fmt.Errorf("%s err: %v", flag, err)
+		return
+	}
+	fmt.Printf("body: %s\n", body)
+	util.WriteTestJsonFile(flag, body)
 	err = json.Unmarshal(body, &data)
 	if err != nil {
 		err = fmt.Errorf("%s jsonDecodeErr: %v", flag, err)

@@ -125,7 +125,7 @@ func SwapSellClose(symb string, volume int) (orderId string, err error) {
 
 // 增加空头逐仓保证金
 // doc: https://binance-docs.github.io/apidocs/futures/cn/#trade-14
-func SwapIncShortPositionMargin(symb string, amount int) (err error) {
+func SwapIncShortPositionMargin(symb string, amount float64) (err error) {
 	const symbol = "Binance SwapIncShortPositionMargin"
 	body, _, err := root.ApiConfig.Post(gateway_fapi, "/fapi/v1/positionMargin", map[string]any{
 		"symbol":       fmt.Sprintf("%sUSDT", strings.ToUpper(symb)),
@@ -154,7 +154,7 @@ func SwapIncShortPositionMargin(symb string, amount int) (err error) {
 
 // 减少空头逐仓保证金
 // doc: https://binance-docs.github.io/apidocs/futures/cn/#trade-14
-func SwapDecShortPositionMargin(symb string, amount int) (err error) {
+func SwapDecShortPositionMargin(symb string, amount float64) (err error) {
 	const symbol = "Binance SwapDecShortPositionMargin"
 	body, _, err := root.ApiConfig.Post(gateway_fapi, "/fapi/v1/positionMargin", map[string]any{
 		"symbol":       fmt.Sprintf("%sUSDT", strings.ToUpper(symb)),
@@ -182,7 +182,7 @@ func SwapDecShortPositionMargin(symb string, amount int) (err error) {
 
 // 增加多头逐仓保证金
 // doc: https://binance-docs.github.io/apidocs/futures/cn/#trade-14
-func SwapIncLongPositionMargin(symb string, amount int) (err error) {
+func SwapIncLongPositionMargin(symb string, amount float64) (err error) {
 	const symbol = "Binance SwapIncLongPositionMargin"
 	body, _, err := root.ApiConfig.Post(gateway_fapi, "/fapi/v1/positionMargin", map[string]any{
 		"symbol":       fmt.Sprintf("%sUSDT", strings.ToUpper(symb)),
@@ -211,7 +211,7 @@ func SwapIncLongPositionMargin(symb string, amount int) (err error) {
 
 // 减少多头逐仓保证金
 // doc: https://binance-docs.github.io/apidocs/futures/cn/#trade-14
-func SwapDecLongPositionMargin(symb string, amount int) (err error) {
+func SwapDecLongPositionMargin(symb string, amount float64) (err error) {
 	const symbol = "Binance SwapDecLongPositionMargin"
 	body, _, err := root.ApiConfig.Post(gateway_fapi, "/fapi/v1/positionMargin", map[string]any{
 		"symbol":       fmt.Sprintf("%sUSDT", strings.ToUpper(symb)),
