@@ -25,14 +25,18 @@ type order struct {
 	Symbol      string `json:"s"`
 	OrderFaq    string `json:"S"` // 订单方向 BUY SELL
 	OrderId     int64  `json:"i"` // orderId
+	Place2      int64  `json:"I"` // orderId
 	OrderStatus string `json:"X"` // orderStatus
 	OrderVolume string `json:"q"` // 订单原始数量
+	Place       string `json:"Q"` // 订单原始数量place
 	OrderPrice  string `json:"p"` // 订单原始价格
+	Place4      string `json:"P"` // 订单原始价格place
 	TradeVolume string `json:"z"` // 订单累计已成交量
 	TradeValue  string `json:"Z"` // 订单累计已成交金额
 	OrderType   string `json:"o"` // 订单类型
 	CreatedAt   int64  `json:"O"` // 订单创建时间
 	FilledAt    int64  `json:"T"` // 订单成交时间
+	Place1      int64  `json:"t"`
 }
 type data struct {
 	Event     string `json:"e"` // 事件类型

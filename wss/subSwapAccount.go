@@ -46,19 +46,21 @@ type msgSwapAccount struct {
 	Data SwapAccount `json:"a"`
 }
 type swapOrder struct {
-	Symbol      string `json:"s"`
-	OrderFaq    string `json:"S"`  // 订单方向 BUY SELL
-	OrderId     int64  `json:"i"`  // orderId
-	OrderStatus string `json:"X"`  // 订单状态 FILLED
-	OrderVolume string `json:"q"`  // 订单原始数量
-	OrderPrice  string `json:"p"`  // 订单原始价格
-	TradeVolume string `json:"z"`  // 订单累计已成交量
-	TradeValue  string `json:"Z"`  // 订单累计已成交金额
-	OrderType   string `json:"o"`  // 订单类型 MARKET
-	CreatedAt   int64  `json:"O"`  // 订单创建时间
-	FilledAt    int64  `json:"T"`  // 订单成交时间
-	TID         int64  `json:"t"`  // 订单成交id
-	Faq         string `json:"ps"` // 持仓方向 LONG SHORT
+	Symbol           string `json:"s"`
+	OrderFaq         string `json:"S"`  // 订单方向 BUY SELL
+	OrderId          int64  `json:"i"`  // orderId
+	OrderStatus      string `json:"X"`  // 订单状态 FILLED
+	OrderVolume      string `json:"q"`  // 订单原始数量
+	OrderVolumePlace string `json:"Q"`  // 订单原始数量Place
+	OrderPrice       string `json:"p"`  // 订单原始价格
+	OrderPricePlace  string `json:"P"`  // 订单原始价格Place
+	TradeVolume      string `json:"z"`  // 订单累计已成交量
+	TradeValue       string `json:"Z"`  // 订单累计已成交金额
+	OrderType        string `json:"o"`  // 订单类型 MARKET
+	CreatedAt        int64  `json:"O"`  // 订单创建时间
+	FilledAt         int64  `json:"T"`  // 订单成交时间
+	TID              int64  `json:"t"`  // 订单成交id
+	Faq              string `json:"ps"` // 持仓方向 LONG SHORT
 }
 type msgSwapOrder struct {
 	Data swapOrder `json:"o"`
