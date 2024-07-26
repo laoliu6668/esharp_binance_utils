@@ -3,6 +3,7 @@ package wss
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,6 +23,7 @@ type SwapPosition struct {
 	Symbol string `json:"s"`  // 交易对 BTCUSDT
 	Faq    string `json:"ps"` // 持仓方向 LONG SHORT
 	Volume string `json:"pa"` // 仓位 -10
+	Margin string `json:"iw"` // 持仓保证金
 }
 type SwapAccount struct {
 	Symbol    string         `json:"s"`
@@ -83,6 +85,7 @@ func SubSwapAccount(reciveAccHandle func(SwapAccount), reciveMarginHandle func(S
 			apis.KeepSwapAccountListenKey(listenKey)
 		}
 	}()
+
 	gateway := "fstream.binance.com?/ws/"
 
 	requrl := fmt.Sprintf("wss://%s%s", gateway, listenKey)
@@ -103,7 +106,7 @@ func SubSwapAccount(reciveAccHandle func(SwapAccount), reciveMarginHandle func(S
 		go logHandle("connected Socket")
 	})
 	ws.OnTextMessageReceived(func(message string) {
-		// fmt.Printf("message: %v\n", message)
+		fmt.Printf("message: %v\n", message)
 		m := data{}
 		err := json.Unmarshal([]byte(message), &m)
 		if err != nil {
@@ -117,7 +120,7 @@ func SubSwapAccount(reciveAccHandle func(SwapAccount), reciveMarginHandle func(S
 				go errHandle(fmt.Errorf("%s json.Unmarshal %s %s", flag, err.Error(), message))
 				return
 			}
-			reciveAccHandle(m.Data)
+			go reciveAccHandle(m.Data)
 		} else if m.Event == "ORDER_TRADE_UPDATE" {
 			m := msgSwapOrder{}
 			err := json.Unmarshal([]byte(message), &m)
@@ -156,7 +159,7 @@ func SubSwapAccount(reciveAccHandle func(SwapAccount), reciveMarginHandle func(S
 			go reciveOrderHandle(ReciveSwapOrderMsg{
 				Exchange:    root.ExchangeName,
 				Symbol:      symbol,
-				OrderId:     string(o.OrderId),
+				OrderId:     strconv.FormatInt(o.OrderId, 10),
 				OrderType:   orderType,
 				OrderPrice:  util.ParseFloat(o.OrderPrice, 0),
 				OrderVolume: util.ParseFloat(o.OrderVolume, 0),
@@ -182,13 +185,14 @@ func SubSwapAccount(reciveAccHandle func(SwapAccount), reciveMarginHandle func(S
 				v.MarginRatio = util.FixedFloat(margin/KeepMNargin, 0)
 				go reciveMarginHandle(v)
 			}
+		} else {
+			go logHandle(message)
 		}
 	})
 	ws.OnClose(func(code int, text string) {
 		// fmt.Printf("close: %v, %v\n", code, text)
 		go errHandle(fmt.Errorf("close: %v, %v", code, text))
 	})
-
 	ws.Connect()
 
 }
