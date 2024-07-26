@@ -159,7 +159,7 @@ func SubSwapAccount(reciveAccHandle func(SwapAccount), reciveMarginHandle func(S
 			go reciveOrderHandle(ReciveSwapOrderMsg{
 				Exchange:    root.ExchangeName,
 				Symbol:      symbol,
-				OrderId:     "B" + strconv.FormatInt(o.OrderId, 10),
+				OrderId:     strconv.FormatInt(o.OrderId, 10),
 				OrderType:   orderType,
 				OrderPrice:  util.ParseFloat(o.OrderPrice, 0),
 				OrderVolume: util.ParseFloat(o.OrderVolume, 0),
