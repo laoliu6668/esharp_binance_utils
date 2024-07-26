@@ -55,7 +55,8 @@ type swapOrder struct {
 	OrderPrice       string `json:"p"`  // 订单原始价格
 	OrderPricePlace  string `json:"P"`  // 订单原始价格Place
 	TradeVolume      string `json:"z"`  // 订单累计已成交量
-	TradeValue       string `json:"Z"`  // 订单累计已成交金额
+	TradePrice       string `json:"ap"` // 订单平均价格
+	Place            string `json:"Z"`  // 订单累计已成交量place
 	OrderType        string `json:"o"`  // 订单类型 MARKET
 	CreatedAt        int64  `json:"O"`  // 订单创建时间
 	FilledAt         int64  `json:"T"`  // 订单成交时间
@@ -108,7 +109,6 @@ func SubSwapAccount(reciveAccHandle func(SwapAccount), reciveMarginHandle func(S
 		go logHandle("connected Socket")
 	})
 	ws.OnTextMessageReceived(func(message string) {
-		fmt.Printf("message: %v\n", message)
 		m := data{}
 		err := json.Unmarshal([]byte(message), &m)
 		if err != nil {
@@ -124,6 +124,7 @@ func SubSwapAccount(reciveAccHandle func(SwapAccount), reciveMarginHandle func(S
 			}
 			go reciveAccHandle(m.Data)
 		} else if m.Event == "ORDER_TRADE_UPDATE" {
+			fmt.Printf("message: %v\n", message)
 			m := msgSwapOrder{}
 			err := json.Unmarshal([]byte(message), &m)
 			if err != nil {
@@ -143,10 +144,12 @@ func SubSwapAccount(reciveAccHandle func(SwapAccount), reciveMarginHandle func(S
 			orderVolumeD, _ := decimal.NewFromString(o.OrderVolume)
 			orderValueD := orderPriceD.Mul(orderVolumeD)
 			orderValue, _ := orderValueD.Float64()
-			tradeValueD, _ := decimal.NewFromString(o.TradeValue)
-			tradeVolumeD, _ := decimal.NewFromString(o.TradeVolume)
-			tradePriceD := tradeValueD.Div(tradeVolumeD)
+			tradePriceD, _ := decimal.NewFromString(o.TradePrice)
 			tradePrice, _ := tradePriceD.Float64()
+			tradeVolumeD, _ := decimal.NewFromString(o.TradeVolume)
+			tradeVolume, _ := tradeVolumeD.Float64()
+			tradeValueD := tradePriceD.Mul(tradeVolumeD) // 成交金额 = 成交价 * 成交量
+			tradeValue, _ := tradeValueD.Float64()
 			// 订单更新
 			orderType := ""
 			if o.OrderFaq == "BUY" && o.Faq == "LONG" {
@@ -167,8 +170,8 @@ func SubSwapAccount(reciveAccHandle func(SwapAccount), reciveMarginHandle func(S
 				OrderVolume: util.ParseFloat(o.OrderVolume, 0),
 				OrderValue:  orderValue,
 				TradePrice:  tradePrice,
-				TradeVolume: util.ParseFloat(o.TradeVolume, 0),
-				TradeValue:  util.ParseFloat(o.TradeValue, 0),
+				TradeVolume: tradeVolume,
+				TradeValue:  tradeValue,
 				CreateAt:    o.CreatedAt,
 				FilledAt:    o.FilledAt,
 				Status:      2,
