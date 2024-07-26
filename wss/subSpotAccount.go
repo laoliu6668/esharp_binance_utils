@@ -3,6 +3,7 @@ package wss
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -154,7 +155,7 @@ func SubSpotAccount(reciveAccHandle func(ReciveBalanceMsg), reciveOrderHandle fu
 			go reciveOrderHandle(ReciveSpotOrderMsg{
 				Exchange:    root.ExchangeName,
 				Symbol:      symbol,
-				OrderId:     string(o.OrderId),
+				OrderId:     "B" + strconv.FormatInt(o.OrderId, 10),
 				OrderType:   strings.ToLower(o.OrderFaq + "-" + o.OrderType),
 				OrderPrice:  util.ParseFloat(o.OrderPrice, 0),
 				OrderVolume: util.ParseFloat(o.OrderVolume, 0),
