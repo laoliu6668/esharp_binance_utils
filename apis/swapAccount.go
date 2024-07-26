@@ -82,7 +82,7 @@ func ChangeSwapPositionSideDual(dual_side_position bool) (err error) {
 // doc: https://developers.binance.com/docs/zh-CN/derivatives/usds-margined-futures/trade/rest-api/Change-Initial-Leverage
 func ChangeSwapLeverage(symbol string, leverage int) (err error) {
 	const flag = "binance ChangeSwapLeverage"
-	body, _, err := root.ApiConfig.Post(gateway_fapi, "/fapi/v1/leverage", map[string]any{
+	_, _, err = root.ApiConfig.Post(gateway_fapi, "/fapi/v1/leverage", map[string]any{
 		"symbol":   fmt.Sprintf("%sUSDT", strings.ToUpper(symbol)),
 		"leverage": leverage,
 	})
@@ -90,20 +90,6 @@ func ChangeSwapLeverage(symbol string, leverage int) (err error) {
 		err = fmt.Errorf("%s err: %v", flag, err)
 		return
 	}
-
-	res := Res{}
-	err = json.Unmarshal(body, &res)
-	if err != nil {
-		err = fmt.Errorf("%s jsonDecodeErr: %v", flag, err)
-		fmt.Println(err)
-		return
-	}
-
-	if res.Code != 200 {
-		err = fmt.Errorf("%s err: %v", flag, res.Msg)
-		return
-	}
-
 	return nil
 }
 

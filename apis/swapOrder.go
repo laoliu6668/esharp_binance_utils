@@ -240,7 +240,7 @@ func SwapDecLongPositionMargin(symb string, amount float64) (err error) {
 
 // 撤销全部订单
 func CancelALLOrder(symb string) (err error) {
-	const symbol = "HTX CancelALLOrder"
+	const symbol = root.ExchangeName + " CancelALLOrder"
 	body, _, err := root.ApiConfig.Delete(gateway_fapi, "/fapi/v1/allOpenOrders", map[string]any{
 		"symbol": fmt.Sprintf("%sUSDT", strings.ToUpper(symb)),
 	})
