@@ -42,7 +42,7 @@ func SubSpotAvgPriceUS(symbols []string, reciveHandle func(WssSpotAvgPriceMsgUS)
 		go logHandle("SubSpotTicker Connected")
 		subList := []string{}
 		for _, s := range symbols {
-			subList = append(subList, fmt.Sprintf("%susdt@avgPrice", strings.ToLower(s)))
+			subList = append(subList, fmt.Sprintf("%susdt@ticker", strings.ToLower(s)))
 		}
 		subData := map[string]any{
 			"method": "SUBSCRIBE",
