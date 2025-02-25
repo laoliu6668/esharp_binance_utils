@@ -23,7 +23,11 @@ func SubSpotTicker(symbols []string, reciveHandle func(Ticker), logHandle func(s
 	gateway := "wss://stream.binance.com:9443/ws"
 	proxyUrl := ""
 	if root.UseProxy {
-		proxyUrl = fmt.Sprintf("http://%s", root.ProxyUrl)
+		if !strings.Contains(root.ProxyUrl, "://") {
+			proxyUrl = fmt.Sprintf("http://%s", root.ProxyUrl)
+		} else {
+			proxyUrl = root.ProxyUrl
+		}
 	}
 	ws := websocketclient.New(gateway, proxyUrl)
 	ws.OnConnectError(func(err error) {
